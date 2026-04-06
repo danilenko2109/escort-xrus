@@ -10,6 +10,14 @@ const parseList = (value) => {
   }
 };
 
+const normalizeImages = (images) => {
+  if (!Array.isArray(images)) return [];
+  return images
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .slice(0, 3);
+};
+
 const toProfileResponse = (row) => {
   if (!row) return null;
   return {
@@ -89,6 +97,13 @@ const createProfile = (req, res) => {
   if (!body.name) {
     return res.status(400).json({ detail: "name is required" });
   }
+  const images = normalizeImages(body.images);
+  if (!images.length) {
+    return res.status(400).json({ detail: "Минимум 1 фото обязательно" });
+  }
+  if (Array.isArray(body.images) && body.images.length > 3) {
+    return res.status(400).json({ detail: "Можно загрузить максимум 3 фото" });
+  }
 
   const now = new Date().toISOString();
   const code = buildCode(body.code, body.name);
@@ -112,7 +127,7 @@ const createProfile = (req, res) => {
         body.country || "Россия",
         body.descriptionShort || "",
         body.descriptionFull || "",
-        JSON.stringify(body.images || []),
+        JSON.stringify(images),
         Number(body.height || 170),
         Number(body.weight || 55),
         JSON.stringify(body.languages || []),
@@ -144,6 +159,13 @@ const updateProfile = (req, res) => {
   }
 
   const body = req.body || {};
+  const incomingImages = body.images === undefined ? parseList(existing.images) : normalizeImages(body.images);
+  if (!incomingImages.length) {
+    return res.status(400).json({ detail: "У анкеты должно быть хотя бы 1 фото" });
+  }
+  if (Array.isArray(body.images) && body.images.length > 3) {
+    return res.status(400).json({ detail: "Можно загрузить максимум 3 фото" });
+  }
   const updated = {
     code: buildCode(body.code ?? existing.code, body.name ?? existing.name),
     name: body.name ?? existing.name,
@@ -152,7 +174,7 @@ const updateProfile = (req, res) => {
     country: body.country ?? existing.country,
     description_short: body.descriptionShort ?? existing.description_short,
     description_full: body.descriptionFull ?? existing.description_full,
-    images: JSON.stringify(body.images ?? parseList(existing.images)),
+    images: JSON.stringify(incomingImages),
     height: Number(body.height ?? existing.height),
     weight: Number(body.weight ?? existing.weight),
     languages: JSON.stringify(body.languages ?? parseList(existing.languages)),

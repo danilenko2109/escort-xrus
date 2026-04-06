@@ -52,6 +52,12 @@ db.exec(`
     message TEXT NOT NULL,
     created_at TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
 `);
 
 const now = new Date().toISOString();
@@ -60,6 +66,15 @@ if (!adminExists) {
   db.prepare(
     "INSERT INTO admins (username, password, created_at) VALUES (?, ?, ?)"
   ).run("admin", "admin123", now);
+}
+
+const bookingPhoneSetting = db.prepare("SELECT key FROM settings WHERE key = ?").get("booking_phone");
+if (!bookingPhoneSetting) {
+  db.prepare("INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)").run(
+    "booking_phone",
+    "+7 (900) 000-00-00",
+    now
+  );
 }
 
 module.exports = db;
