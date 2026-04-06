@@ -120,7 +120,7 @@ const ProfileBookingForm = ({ profile }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError('');
-    setSuccess(null);
+    setShowSuccessModal(false);
     if (!validate()) return;
 
     setLoading(true);
