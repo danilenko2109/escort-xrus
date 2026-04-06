@@ -430,13 +430,21 @@ const ProfileBookingForm = ({ profile }) => {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-2xl font-medium text-[#D4AF37]">Заявка почти готова</h3>
-                <p className="mt-2 text-[#A1A1AA]">Для подтверждения позвоните на этот номер</p>
+                <p className="mt-4 text-sm uppercase tracking-widest text-[#A1A1AA]">Ваша сумма заказа</p>
               </div>
-              <button onClick={() => setShowSuccessModal(false)} className="text-[#A1A1AA] hover:text-white">
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  resetForm();
+                }}
+                className="text-[#A1A1AA] hover:text-white"
+              >
                 <X size={18} />
               </button>
             </div>
-            <p className="mt-6 text-3xl font-medium tracking-tight text-[#F8F8F8]">{bookingPhone}</p>
+            <p className="mt-2 text-4xl font-medium tracking-tight text-[#F8F8F8]">{formatRub(price)}</p>
+            <p className="mt-5 text-[#A1A1AA]">Для подтверждения позвоните</p>
+            <p className="mt-2 text-3xl font-medium tracking-tight text-[#D4AF37]">{bookingPhone}</p>
             <button
               type="button"
               onClick={() => {
