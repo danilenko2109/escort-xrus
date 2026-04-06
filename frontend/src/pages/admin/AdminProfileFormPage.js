@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, X } from 'lucide-react';
-import { profilesAPI } from '../../services/api';
+import { profilesAPI, uploadsAPI } from '../../services/api';
 import { toast } from 'sonner';
+import { resolveMediaUrl } from '../../lib/mediaUrl';
 
 const AdminProfileFormPage = () => {
   const { id } = useParams();
@@ -34,8 +35,8 @@ const AdminProfileFormPage = () => {
 
   const [languageInput, setLanguageInput] = useState('');
   const [tagInput, setTagInput] = useState('');
-  const [imageInput, setImageInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -101,16 +102,6 @@ const AdminProfileFormPage = () => {
     });
   };
 
-  const handleAddImageUrl = () => {
-    if (imageInput.trim() && !formData.images.includes(imageInput.trim())) {
-      setFormData({
-        ...formData,
-        images: [...formData.images, imageInput.trim()]
-      });
-      setImageInput('');
-    }
-  };
-
   const handleRemoveImage = (img) => {
     setFormData({
       ...formData,
@@ -118,8 +109,28 @@ const AdminProfileFormPage = () => {
     });
   };
 
-  const handleFileUpload = async () => {
-    toast.error('Загрузка файла отключена. Используйте URL изображения.');
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (formData.images.length >= 3) {
+      toast.error('Можно загрузить максимум 3 фото');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const data = await uploadsAPI.uploadProfileImage(file);
+      setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, data.url].slice(0, 3)
+      }));
+      toast.success('Фото загружено');
+    } catch (error) {
+      toast.error(error.message || 'Не удалось загрузить фото');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -127,6 +138,16 @@ const AdminProfileFormPage = () => {
     setLoading(true);
 
     try {
+      if (formData.images.length < 1) {
+        toast.error('Добавьте минимум 1 фото');
+        setLoading(false);
+        return;
+      }
+      if (formData.images.length > 3) {
+        toast.error('Допустимо максимум 3 фото');
+        setLoading(false);
+        return;
+      }
       if (isEdit) {
         await profilesAPI.update(id, formData);
         toast.success('Профиль обновлен');
@@ -302,12 +323,19 @@ const AdminProfileFormPage = () => {
           {/* Images */}
           <div className="bg-[#0A0A0A] border border-white/10 p-8 rounded-sm">
             <h2 className="text-xl font-medium text-[#D4AF37] mb-6">Изображения</h2>
+            <p className="text-sm text-[#A1A1AA] mb-4">
+              Загружайте только файлы изображений. Максимум 3 фото, размер каждого до 5MB.
+            </p>
             
             <div className="mb-4">
-              <label className="block w-full cursor-pointer">
+              <label className={`block w-full cursor-pointer ${formData.images.length >= 3 ? 'opacity-60 cursor-not-allowed' : ''}`}>
                 <div className="border-2 border-dashed border-white/20 hover:border-[#D4AF37] p-8 text-center transition-colors">
                   <p className="text-sm text-[#A1A1AA]">
-                    Загрузка файлов отключена (используйте URL ниже)
+                    {uploadingImage
+                      ? 'Загрузка фото...'
+                      : formData.images.length >= 3
+                        ? 'Достигнут лимит 3 фото'
+                        : 'Нажмите, чтобы выбрать и загрузить фото'}
                   </p>
                 </div>
                 <input
@@ -315,36 +343,16 @@ const AdminProfileFormPage = () => {
                   onChange={handleFileUpload}
                   accept="image/*"
                   className="hidden"
-                  disabled={true}
+                  disabled={uploadingImage || formData.images.length >= 3}
                 />
               </label>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm text-[#A1A1AA] mb-2">Или добавить URL</label>
-              <div className="flex space-x-2">
-                <input
-                  type="url"
-                  value={imageInput}
-                  onChange={(e) => setImageInput(e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                  className="flex-1 bg-transparent border-b border-white/20 focus:border-[#D4AF37] text-white py-2 px-0 outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddImageUrl}
-                  className="bg-[#D4AF37] text-[#050505] px-4 py-2 text-sm"
-                >
-                  Добавить
-                </button>
-              </div>
             </div>
 
             {formData.images.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {formData.images.map((img, idx) => (
                   <div key={idx} className="relative group">
-                    <img src={img} alt="" className="w-full h-32 object-cover rounded" />
+                    <img src={resolveMediaUrl(img)} alt="" className="w-full h-32 object-cover rounded" />
                     <button
                       type="button"
                       onClick={() => handleRemoveImage(img)}

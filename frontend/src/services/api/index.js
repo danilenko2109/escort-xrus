@@ -46,10 +46,30 @@ export const adminAPI = {
   getStats: () => wrap(() => apiClient.get("/api/admin/stats")),
 };
 
+export const settingsAPI = {
+  getBookingPhone: () => wrap(() => apiClient.get("/api/settings/booking-phone")),
+  updateBookingPhone: (phone) => wrap(() => apiClient.put("/api/settings/booking-phone", { phone })),
+};
+
 export const contactAPI = {
   submit: (data) => wrap(() => apiClient.post("/api/contact", data)),
 };
 
 export const requestAPI = {
   submit: (data) => wrap(() => apiClient.post("/api/requests", data)),
+};
+
+export const uploadsAPI = {
+  uploadProfileImage: async (file) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    try {
+      const response = await apiClient.post("/api/uploads/profile-image", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
 };

@@ -4,8 +4,9 @@ import { motion } from 'framer-motion';
 import { MapPin, User, Ruler, Weight, Languages, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import LoadingSkeleton from '../components/LoadingSkeleton';
 import ProfileCard from '../components/ProfileCard';
-import { profilesAPI, requestAPI } from '../services/api';
-import { toast } from 'sonner';
+import ProfileBookingForm from '../components/ProfileBookingForm';
+import { profilesAPI } from '../services/api';
+import { resolveMediaUrl } from '../lib/mediaUrl';
 
 const ProfileDetailPage = () => {
   const { id } = useParams();
@@ -16,8 +17,6 @@ const ProfileDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [relatedProfiles, setRelatedProfiles] = useState([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [selectedDuration, setSelectedDuration] = useState('');
-  const [showCallModal, setShowCallModal] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -80,17 +79,6 @@ const ProfileDetailPage = () => {
     }
   };
 
-  const handleDurationSelect = async (duration) => {
-    setSelectedDuration(duration);
-    try {
-      await requestAPI.submit({ profileCode: profile?.code || profile?.id, duration });
-    } catch (error) {
-      toast.error(error.message || 'Не удалось сохранить заявку');
-    } finally {
-      setShowCallModal(true);
-    }
-  };
-
   if (loading) {
     return <LoadingSkeleton type="hero" />;
   }
@@ -108,7 +96,9 @@ const ProfileDetailPage = () => {
     );
   }
 
-  const imageUrl = profile.images?.[currentImageIndex] || profile.images?.[0] || 'https://images.unsplash.com/photo-1759933512107-e02a1328190d';
+  const imageUrl = resolveMediaUrl(
+    profile.images?.[currentImageIndex] || profile.images?.[0] || 'https://images.unsplash.com/photo-1759933512107-e02a1328190d'
+  );
 
   return (
     <div className="min-h-screen pt-20" data-testid="profile-detail-page">
@@ -278,14 +268,8 @@ const ProfileDetailPage = () => {
                   )}
                 </div>
 
-                <div className="mt-8">
-                  <p className="text-xs text-[#71717A] uppercase tracking-widest mb-3">Выберите длительность</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button onClick={() => handleDurationSelect('1h')} className="border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#050505] py-3 text-xs uppercase tracking-widest transition-colors">1 час</button>
-                    <button onClick={() => handleDurationSelect('2h')} className="border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#050505] py-3 text-xs uppercase tracking-widest transition-colors">2 часа</button>
-                    <button onClick={() => handleDurationSelect('3h')} className="border border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37] hover:text-[#050505] py-3 text-xs uppercase tracking-widest transition-colors">3 часа</button>
-                  </div>
-                  <p className="text-xs text-[#A1A1AA] mt-4">Код анкеты: <span className="text-[#D4AF37]">{profile.code || profile.id}</span></p>
+                <div className="mt-8 border-t border-white/10 pt-6">
+                  <ProfileBookingForm profile={profile} />
                 </div>
               </motion.div>
             </div>
@@ -309,20 +293,6 @@ const ProfileDetailPage = () => {
         </section>
       )}
 
-      {showCallModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center px-6">
-          <div className="w-full max-w-md bg-[#0A0A0A] border border-[#D4AF37]/30 p-8 rounded-sm">
-            <h3 className="text-xl text-[#D4AF37] mb-4">Заявка создана</h3>
-            <p className="text-[#F8F8F8] leading-relaxed">
-              Для завершения заявки позвоните по номеру: <span className="text-[#D4AF37]">+7 (900) 000-00-00</span>
-            </p>
-            <p className="text-sm text-[#A1A1AA] mt-3">Выбрано: {selectedDuration === '1h' ? '1 час' : selectedDuration === '2h' ? '2 часа' : '3 часа'}</p>
-            <button onClick={() => setShowCallModal(false)} className="mt-6 w-full bg-[#D4AF37] text-[#050505] hover:bg-[#F3E5AB] py-3 uppercase tracking-widest text-sm">
-              Закрыть
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
